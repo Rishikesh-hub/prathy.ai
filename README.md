@@ -33,3 +33,6 @@ A modern React application powered by AI to predict potential interactions betwe
 
 ## License
 This project is licensed under the MIT License.
+
+# drug-food-interactions
+
