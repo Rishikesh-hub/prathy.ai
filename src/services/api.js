@@ -3,6 +3,9 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Attach token to every request
@@ -13,7 +16,36 @@ api.interceptors.request.use((config) => {
 });
 
 // ──────────────────────────────────────────────
-// MOCK DATA — simulates backend responses
+// BACKEND-CONNECTED INTERACTION SERVICE
+// ──────────────────────────────────────────────
+export const interactionService = {
+  predict: async (drug, food) => {
+    try {
+      const response = await api.post('/predict', { drug, food });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error predicting interaction:', error);
+      const message = error?.response?.data?.message || error.message || 'Prediction failed';
+      throw new Error(message);
+    }
+  },
+
+  getHistory: async () => {
+    await new Promise(r => setTimeout(r, 600));
+    const raw = localStorage.getItem('medsafe_history');
+    return raw ? JSON.parse(raw) : [];
+  },
+
+  saveToHistory: (result) => {
+    const raw = localStorage.getItem('medsafe_history');
+    const history = raw ? JSON.parse(raw) : [];
+    history.unshift({ ...result, id: Date.now() });
+    localStorage.setItem('medsafe_history', JSON.stringify(history.slice(0, 50)));
+  },
+};
+
+// ──────────────────────────────────────────────
+// MOCK DATA — simulates backend responses for developer preview
 // ──────────────────────────────────────────────
 const INTERACTIONS_DB = {
   'warfarin': {
@@ -78,48 +110,6 @@ export const authService = {
     if (!name || !email || !password) throw new Error('All fields are required.');
     const mockUser = { id: 'usr_' + Math.random().toString(36).slice(2), name, email, age: null, gender: null, weight: null, conditions: [], allergies: [] };
     return { user: mockUser, token: 'mock_jwt_' + Date.now() };
-  },
-};
-
-export const interactionService = {
-  predict: async (drug, food) => {
-    await new Promise(r => setTimeout(r, 1500));
-    const drugKey = findKey(INTERACTIONS_DB, drug);
-    if (!drugKey) {
-      return {
-        drug, food,
-        risk: 'UNKNOWN',
-        severity: 'Unknown',
-        effect: `No specific interaction data available for ${drug} with ${food}.`,
-        advice: 'Always consult your pharmacist or physician before combining medications with new foods.',
-        timestamp: new Date().toISOString(),
-      };
-    }
-    const foodKey = findKey(INTERACTIONS_DB[drugKey], food);
-    if (!foodKey) {
-      return {
-        drug, food,
-        risk: 'LOW',
-        severity: 'Low',
-        effect: `No known significant interaction between ${drug} and ${food}.`,
-        advice: 'This combination appears generally safe, but always consult your healthcare provider.',
-        timestamp: new Date().toISOString(),
-      };
-    }
-    return { drug, food, ...INTERACTIONS_DB[drugKey][foodKey], timestamp: new Date().toISOString() };
-  },
-
-  getHistory: async () => {
-    await new Promise(r => setTimeout(r, 600));
-    const raw = localStorage.getItem('medsafe_history');
-    return raw ? JSON.parse(raw) : [];
-  },
-
-  saveToHistory: (result) => {
-    const raw = localStorage.getItem('medsafe_history');
-    const history = raw ? JSON.parse(raw) : [];
-    history.unshift({ ...result, id: Date.now() });
-    localStorage.setItem('medsafe_history', JSON.stringify(history.slice(0, 50)));
   },
 };
 

@@ -74,7 +74,8 @@ export default function Dashboard() {
       setResult(res);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
     } catch (err) {
-      setError('Prediction failed. Please try again.');
+      console.error('Prediction error:', err);
+      setError(err.message || 'Prediction failed. Please try again.');
     } finally {
       setLoading(false);
     }

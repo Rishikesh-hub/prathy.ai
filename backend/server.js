@@ -204,6 +204,56 @@ app.get('/api/search', (req, res) => {
   }
 });
 
+// Predict interaction based on drug and food input
+app.post('/api/predict', (req, res) => {
+  try {
+    const { drug, food } = req.body;
+
+    if (!drug || !food) {
+      return res.status(400).json({
+        success: false,
+        message: 'Drug and food are required for prediction.'
+      });
+    }
+
+    const normalizedDrug = drug.trim().toLowerCase();
+    const normalizedFood = food.trim().toLowerCase();
+
+    const match = interactions.find((interaction) =>
+      interaction.drug.toLowerCase() === normalizedDrug &&
+      interaction.food.toLowerCase() === normalizedFood
+    );
+
+    const result = match
+      ? {
+          drug: match.drug,
+          food: match.food,
+          risk: match.severity === 'High' ? 'HIGH' : match.severity === 'Medium' ? 'MODERATE' : 'LOW',
+          severity: match.severity,
+          effect: match.description || 'No additional details available.',
+          advice: `Please consult your healthcare provider before combining ${match.drug} with ${match.food}.`,
+          timestamp: new Date().toISOString(),
+        }
+      : {
+          drug,
+          food,
+          risk: 'LOW',
+          severity: 'Low',
+          effect: `No known significant interaction was found for ${drug} and ${food}.`,
+          advice: 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.',
+          timestamp: new Date().toISOString(),
+        };
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error predicting interaction',
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend server is running!' });
@@ -218,6 +268,7 @@ app.listen(PORT, () => {
   console.log(`   POST   http://localhost:${PORT}/api/interactions`);
   console.log(`   PUT    http://localhost:${PORT}/api/interactions/:id`);
   console.log(`   DELETE http://localhost:${PORT}/api/interactions/:id`);
+  console.log(`   POST   http://localhost:${PORT}/api/predict`);
   console.log(`   GET    http://localhost:${PORT}/api/search?drug=name&food=name`);
 });
 
