@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -205,7 +206,7 @@ app.get('/api/search', (req, res) => {
 });
 
 // Predict interaction based on drug and food input
-app.post('/api/predict', (req, res) => {
+app.post('/api/predict', async (req, res) => {
   try {
     const { drug, food } = req.body;
 
@@ -216,35 +217,48 @@ app.post('/api/predict', (req, res) => {
       });
     }
 
-    const normalizedDrug = drug.trim().toLowerCase();
-    const normalizedFood = food.trim().toLowerCase();
+    try {
+      const pythonRes = await axios.post('http://127.0.0.1:8000/predict', {
+        drug: drug,
+        food: food
+      });
+      
+      const p = pythonRes.data.prediction;
+      
+      let risk, severity, effect, advice;
+      if (p === 2) {
+        risk = "HIGH"; severity = "High"; 
+        effect = "High risk interaction detected! Please avoid this combination.";
+        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+      } else if (p === 1) {
+        risk = "MODERATE"; severity = "Medium"; 
+        effect = "Moderate interaction. Proceed with caution.";
+        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+      } else {
+        risk = "LOW"; severity = "Low"; 
+        effect = `No known significant interaction was found for ${drug} and ${food}.`;
+        advice = 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.';
+      }
 
-    const match = interactions.find((interaction) =>
-      interaction.drug.toLowerCase() === normalizedDrug &&
-      interaction.food.toLowerCase() === normalizedFood
-    );
-
-    const result = match
-      ? {
-          drug: match.drug,
-          food: match.food,
-          risk: match.severity === 'High' ? 'HIGH' : match.severity === 'Medium' ? 'MODERATE' : 'LOW',
-          severity: match.severity,
-          effect: match.description || 'No additional details available.',
-          advice: `Please consult your healthcare provider before combining ${match.drug} with ${match.food}.`,
+      const result = {
+          drug: drug,
+          food: food,
+          risk: risk,
+          severity: severity,
+          effect: effect,
+          advice: advice,
           timestamp: new Date().toISOString(),
-        }
-      : {
-          drug,
-          food,
-          risk: 'LOW',
-          severity: 'Low',
-          effect: `No known significant interaction was found for ${drug} and ${food}.`,
-          advice: 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.',
-          timestamp: new Date().toISOString(),
-        };
+      };
 
-    return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({ success: true, data: result });
+    } catch (pyError) {
+      console.error("Python API Error:", pyError.message);
+      return res.status(502).json({
+        success: false,
+        message: 'Failed to contact Python prediction model.',
+        error: pyError.message
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,

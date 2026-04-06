@@ -1,155 +1,121 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
-from dotenv import load_dotenv
-import os
+import xgboost as xgb
+import numpy as np
+import pandas as pd
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-load_dotenv()
+app = FastAPI()
 
-app = FastAPI(
-    title="Drug-Food Interactions API",
-    description="API for managing and analyzing drug-food interactions",
-    version="1.0.0"
-)
+# 1. Load the model and datasets
+try:
+    model = xgb.XGBClassifier()
+    model.load_model("drug_food_model.json")
+except Exception as e:
+    model = None
+    print(f"Error loading model: {e}")
 
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+try:
+    drug_df = pd.read_csv(r"c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\dug_dataset\PubChem_compound_FDA_approved_drugs (1).csv")
+    food_df = pd.read_csv(r"c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\food_dataset\Compound (1).csv")
+except Exception as e:
+    drug_df = None
+    food_df = None
+    print(f"Error loading datasets: {e}")
 
-# Models
-class Interaction(BaseModel):
+def get_base_features(mol):
+    if mol is None:
+        return None
+    
+    tpsa = rdMolDescriptors.CalcTPSA(mol)
+    smr_vsa = rdMolDescriptors.SMR_VSA_(mol)  # Length 10
+    vsa_estate = rdMolDescriptors.CalcVSA_EState_(mol) # Length 10
+    estate_vsa = rdMolDescriptors.CalcEState_VSA_(mol) # Length 11
+    peoe_vsa = rdMolDescriptors.PEOE_VSA_(mol) # Length 14
+    slogp_vsa = rdMolDescriptors.SlogP_VSA_(mol) # Length 12
+    labute_asa = rdMolDescriptors.CalcLabuteASA(mol)
+    
+    feats = {}
+    feats['MTPSA'] = tpsa
+    for i, v in enumerate(smr_vsa): feats[f'MRVSA{i}'] = v
+    for i, v in enumerate(vsa_estate): feats[f'VSAEstate{i}'] = v
+    for i, v in enumerate(estate_vsa): feats[f'EstateVSA{i}'] = v
+    for i, v in enumerate(peoe_vsa): feats[f'PEOEVSA{i}'] = v
+    for i, v in enumerate(slogp_vsa): feats[f'slogPVSA{i}'] = v
+    feats['LabuteASA'] = labute_asa
+    return feats
+
+class PredictionRequest(BaseModel):
     drug: str
     food: str
-    severity: str
-    description: Optional[str] = ""
 
-class InteractionResponse(Interaction):
-    id: int
-
-# Sample database (in-memory)
-interactions_db = [
-    {"id": 1, "drug": "Aspirin", "food": "Alcohol", "severity": "High", "description": "Can increase risk of stomach bleeding"},
-    {"id": 2, "drug": "Metformin", "food": "Vitamin B12 Rich Foods", "severity": "Medium", "description": "May reduce B12 absorption"}
-]
-
-# Health Check
-@app.get("/api/health")
-async def health_check():
-    return {"status": "Backend server is running!"}
-
-# GET all interactions
-@app.get("/api/interactions", response_model=dict)
-async def get_all_interactions():
-    return {
-        "success": True,
-        "data": interactions_db,
-        "message": "Interactions fetched successfully"
-    }
-
-# GET single interaction by ID
-@app.get("/api/interactions/{interaction_id}", response_model=dict)
-async def get_interaction(interaction_id: int):
-    interaction = next((i for i in interactions_db if i["id"] == interaction_id), None)
-    if not interaction:
-        raise HTTPException(status_code=404, detail="Interaction not found")
-    return {
-        "success": True,
-        "data": interaction
-    }
-
-# POST create new interaction
-@app.post("/api/interactions", response_model=dict)
-async def create_interaction(interaction: Interaction):
-    if not interaction.drug or not interaction.food or not interaction.severity:
-        raise HTTPException(status_code=400, detail="Please provide drug, food, and severity")
+@app.post("/predict")
+def get_prediction(data: PredictionRequest):
+    if model is None or drug_df is None or food_df is None:
+        raise HTTPException(status_code=500, detail="Server not properly initialized (model or datasets missing).")
+        
+    drug_name = data.drug.lower()
+    food_name = data.food.lower()
     
-    new_id = max([i["id"] for i in interactions_db]) + 1 if interactions_db else 1
-    new_interaction = {
-        "id": new_id,
-        "drug": interaction.drug,
-        "food": interaction.food,
-        "severity": interaction.severity,
-        "description": interaction.description
-    }
+    # Retrieve smiles
+    drug_row = drug_df[drug_df['Name'].str.lower() == drug_name]
+    food_row = food_df[food_df['name'].str.lower() == food_name]
     
-    interactions_db.append(new_interaction)
+    if drug_row.empty:
+        raise HTTPException(status_code=404, detail=f"Drug '{data.drug}' not found in dataset.")
+    if food_row.empty:
+        raise HTTPException(status_code=404, detail=f"Food '{data.food}' not found in dataset.")
+        
+    drug_smiles = drug_row.iloc[0]['SMILES']
+    food_smiles = food_row.iloc[0]['moldb_smiles']
     
-    return {
-        "success": True,
-        "message": "Interaction added successfully",
-        "data": new_interaction
-    }
+    if pd.isna(drug_smiles) or pd.isna(food_smiles):
+        raise HTTPException(status_code=400, detail="SMILES data is missing for the given drug or food.")
 
-# PUT update interaction
-@app.put("/api/interactions/{interaction_id}", response_model=dict)
-async def update_interaction(interaction_id: int, interaction: Interaction):
-    existing = next((i for i in interactions_db if i["id"] == interaction_id), None)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Interaction not found")
+    # Combine SMILES for descriptor calculation
+    combined_smiles = f"{drug_smiles}.{food_smiles}"
+    mol = Chem.MolFromSmiles(combined_smiles)
+    if mol is None:
+        raise HTTPException(status_code=400, detail="Invalid SMILES combination.")
+        
+    base_feats = get_base_features(mol)
+    if base_feats is None:
+        raise HTTPException(status_code=400, detail="Failed to calculate features.")
+
+    # Construct the exact 18 features expected by the model
+    try:
+        features = [
+            base_feats['MTPSA'] + base_feats['MTPSA'],
+            base_feats['MRVSA9'],
+            base_feats['MRVSA8'],
+            base_feats['MRVSA0'],
+            base_feats['MRVSA2'],
+            base_feats['VSAEstate10'] + base_feats['VSAEstate10'],
+            base_feats['EstateVSA0'] * base_feats['LabuteASA'],
+            base_feats['PEOEVSA12'],
+            base_feats['PEOEVSA10'],
+            base_feats['PEOEVSA5'],
+            base_feats['PEOEVSA9'],
+            base_feats['slogPVSA2'],
+            base_feats['slogPVSA0'],
+            base_feats['slogPVSA9'],
+            base_feats['VSAEstate7'] + base_feats['VSAEstate7'],
+            base_feats['EstateVSA7'],
+            base_feats['EstateVSA2'],
+            base_feats['EstateVSA1'] * base_feats['VSAEstate8']
+        ]
+    except KeyError as e:
+        raise HTTPException(status_code=500, detail=f"Missing descriptor feature: {str(e)}")
+
+    # Convert to 2D numpy array
+    input_array = np.array([features])
     
-    existing["drug"] = interaction.drug or existing["drug"]
-    existing["food"] = interaction.food or existing["food"]
-    existing["severity"] = interaction.severity or existing["severity"]
-    existing["description"] = interaction.description or existing["description"]
+    # Run the prediction
+    prediction = model.predict(input_array)
     
     return {
-        "success": True,
-        "message": "Interaction updated successfully",
-        "data": existing
+        "prediction": int(prediction[0]),
+        "drug_smiles": drug_smiles,
+        "food_smiles": food_smiles
     }
-
-# DELETE interaction
-@app.delete("/api/interactions/{interaction_id}", response_model=dict)
-async def delete_interaction(interaction_id: int):
-    global interactions_db
-    interaction = next((i for i in interactions_db if i["id"] == interaction_id), None)
-    if not interaction:
-        raise HTTPException(status_code=404, detail="Interaction not found")
-    
-    interactions_db = [i for i in interactions_db if i["id"] != interaction_id]
-    
-    return {
-        "success": True,
-        "message": "Interaction deleted successfully",
-        "data": interaction
-    }
-
-# SEARCH interactions by drug or food
-@app.get("/api/search", response_model=dict)
-async def search_interactions(drug: Optional[str] = None, food: Optional[str] = None):
-    results = interactions_db
-    
-    if drug:
-        results = [i for i in results if drug.lower() in i["drug"].lower()]
-    
-    if food:
-        results = [i for i in results if food.lower() in i["food"].lower()]
-    
-    return {
-        "success": True,
-        "data": results,
-        "count": len(results)
-    }
-
-# Root endpoint
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to Drug-Food Interactions API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "api_base": "/api"
-    }
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    print(f"✅ FastAPI Server is running on http://localhost:{port}")
-    print(f"📚 API Documentation: http://localhost:{port}/docs")
-    uvicorn.run(app, host="0.0.0.0", port=port)
