@@ -8,8 +8,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('medsafe_token');
-    const savedUser = localStorage.getItem('medsafe_user');
+    const savedToken = localStorage.getItem('prathy_token');
+    const savedUser = localStorage.getItem('prathy_user');
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -20,21 +20,21 @@ export function AuthProvider({ children }) {
   const login = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
-    localStorage.setItem('medsafe_token', authToken);
-    localStorage.setItem('medsafe_user', JSON.stringify(userData));
+    localStorage.setItem('prathy_token', authToken);
+    localStorage.setItem('prathy_user', JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('medsafe_token');
-    localStorage.removeItem('medsafe_user');
+    localStorage.removeItem('prathy_token');
+    localStorage.removeItem('prathy_user');
   };
 
   const updateUser = (updatedData) => {
     const merged = { ...user, ...updatedData };
     setUser(merged);
-    localStorage.setItem('medsafe_user', JSON.stringify(merged));
+    localStorage.setItem('prathy_user', JSON.stringify(merged));
   };
 
   return (

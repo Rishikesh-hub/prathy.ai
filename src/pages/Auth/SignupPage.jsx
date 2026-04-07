@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, Pill, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/api';
 import './AuthPages.css';
@@ -40,10 +40,10 @@ export default function SignupPage() {
   return (
     <div className="auth-page">
       <div className="app-bg"><div className="orb orb-1"/><div className="orb orb-2"/></div>
-      <div className="auth-card glass animate-fade-up">
+      <div className="auth-card animate-fade-up">
         <div className="auth-logo">
-          <div className="navbar-logo-icon"><Pill size={18}/></div>
-          <span>MedSafe <span className="logo-accent">AI</span></span>
+          <div className="navbar-logo-icon"><Sparkles size={16}/></div>
+          <span>Prathy<span className="logo-accent">.ai</span></span>
         </div>
         <h1 className="auth-title">Create your account</h1>
         <p className="auth-subtitle">Start checking drug–food interactions for free</p>
@@ -82,10 +82,10 @@ export default function SignupPage() {
               <div className="pwd-strength">
                 <div className="pwd-strength-bar">
                   {[1,2,3].map(i => (
-                    <div key={i} className="pwd-bar-segment" style={{ background: i <= strength ? strengthColor[strength] : 'var(--border-glass)' }}/>
+                    <div key={i} className="pwd-bar-segment" style={{ background: i <= strength ? strengthColor[strength] : '#E8E8E8' }}/>
                   ))}
                 </div>
-                <span style={{ color: strengthColor[strength], fontSize:'0.78rem' }}>{strengthLabel[strength]}</span>
+                <span style={{ color: strengthColor[strength], fontSize:'0.78rem', fontWeight: 500 }}>{strengthLabel[strength]}</span>
               </div>
             )}
           </div>

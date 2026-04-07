@@ -47,8 +47,8 @@ export default function ProfilePage() {
 
         <form onSubmit={handleSave} className="profile-form">
           {/* Basic Info */}
-          <div className="profile-section glass animate-fade-up">
-            <div className="ps-header"><User size={18} style={{ color:'var(--primary-light)' }}/><h2>Personal Information</h2></div>
+          <div className="profile-section animate-fade-up">
+            <div className="ps-header"><User size={18} style={{ color:'var(--primary)' }}/><h2>Personal Information</h2></div>
             <div className="ps-grid">
               <div className="form-group">
                 <label className="form-label">Age</label>
@@ -74,7 +74,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Medical Conditions */}
-          <div className="profile-section glass animate-fade-up" style={{ animationDelay:'0.1s' }}>
+          <div className="profile-section animate-fade-up" style={{ animationDelay:'0.1s' }}>
             <div className="ps-header"><Heart size={18} style={{ color:'var(--danger-light)' }}/><h2>Medical Conditions</h2></div>
             <p className="ps-desc">Select all that apply — this helps personalize your risk assessments.</p>
             <div className="tag-grid">
@@ -89,7 +89,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Allergies */}
-          <div className="profile-section glass animate-fade-up" style={{ animationDelay:'0.15s' }}>
+          <div className="profile-section animate-fade-up" style={{ animationDelay:'0.15s' }}>
             <div className="ps-header"><Pill size={18} style={{ color:'var(--warning-light)' }}/><h2>Known Drug Allergies</h2></div>
             <p className="ps-desc">Select medications you are allergic to.</p>
             <div className="tag-grid">
@@ -104,7 +104,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Current Medications */}
-          <div className="profile-section glass animate-fade-up" style={{ animationDelay:'0.2s' }}>
+          <div className="profile-section animate-fade-up" style={{ animationDelay:'0.2s' }}>
             <div className="ps-header"><Pill size={18} style={{ color:'var(--accent-light)' }}/><h2>Current Medications</h2></div>
             <div className="form-group">
               <label className="form-label">List your medications (one per line)</label>

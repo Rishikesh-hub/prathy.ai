@@ -24,7 +24,7 @@ export default function HistoryPage() {
   }, []);
 
   const clearHistory = () => {
-    localStorage.removeItem('medsafe_history');
+    localStorage.removeItem('prathy_history');
     setHistory([]);
     setExpanded(null);
   };
@@ -60,7 +60,7 @@ export default function HistoryPage() {
         {history.length > 0 && (
           <div className="history-stats animate-fade-up">
             {['HIGH','MODERATE','LOW'].map(r => (
-              <div key={r} className={`hstat glass ${r.toLowerCase()}-stat`}>
+              <div key={r} className={`hstat ${r.toLowerCase()}-stat`}>
                 {RISK_ICONS[r]}
                 <span className="hstat-count">{counts[r] || 0}</span>
                 <span className="hstat-label">{r === 'HIGH' ? 'Severe' : r === 'MODERATE' ? 'Moderate' : 'Low'}</span>
@@ -92,7 +92,7 @@ export default function HistoryPage() {
         {loading ? (
           <div style={{ display:'flex', justifyContent:'center', padding:60 }}><div className="spinner-lg"/></div>
         ) : filtered.length === 0 ? (
-          <div className="history-empty glass animate-fade-up">
+          <div className="history-empty animate-fade-up">
             <History size={48} style={{ color:'var(--text-muted)', margin:'0 auto 16px' }}/>
             <h2>No history found</h2>
             <p>{history.length === 0
@@ -112,7 +112,7 @@ export default function HistoryPage() {
                     <InteractionCard result={item}/>
                   </div>
                 ) : (
-                  <div className="history-row glass" onClick={() => setExpanded(item.id)}>
+                  <div className="history-row" onClick={() => setExpanded(item.id)}>
                     <div className="hr-left">
                       {RISK_ICONS[item.risk]}
                       <span className="hr-drug">{item.drug}</span>

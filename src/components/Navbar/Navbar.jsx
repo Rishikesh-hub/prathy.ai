@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, LogOut, User, History, LayoutDashboard, Menu, X, Pill } from 'lucide-react';
+import { LogOut, User, History, LayoutDashboard, Menu, X, Sparkles } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -32,9 +32,9 @@ export default function Navbar() {
         {/* Logo */}
         <Link to={user ? '/dashboard' : '/'} className="navbar-logo">
           <div className="navbar-logo-icon">
-            <Pill size={18} />
+            <Sparkles size={16} />
           </div>
-          <span>MedSafe<span className="logo-accent"> AI</span></span>
+          <span>Prathy<span className="logo-accent">.ai</span></span>
         </Link>
 
         {/* Desktop Nav */}

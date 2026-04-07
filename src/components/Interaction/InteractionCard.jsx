@@ -1,4 +1,4 @@
-import { Pill, Leaf, AlertTriangle, CheckCircle, AlertCircle, HelpCircle, Clock, Copy, Share2 } from 'lucide-react';
+import { Pill, Leaf, AlertTriangle, CheckCircle, AlertCircle, HelpCircle, Clock, Copy } from 'lucide-react';
 import './InteractionCard.css';
 
 const RISK_CONFIG = {
@@ -9,7 +9,6 @@ const RISK_CONFIG = {
     cardClass: 'card-high',
     barWidth: '100%',
     barColor: 'var(--danger)',
-    glow: 'var(--shadow-glow-danger)',
   },
   MODERATE: {
     label: 'Moderate Risk',
@@ -18,7 +17,6 @@ const RISK_CONFIG = {
     cardClass: 'card-moderate',
     barWidth: '66%',
     barColor: 'var(--warning)',
-    glow: '0 0 30px rgba(245,158,11,0.2)',
   },
   LOW: {
     label: 'Low Risk',
@@ -27,7 +25,6 @@ const RISK_CONFIG = {
     cardClass: 'card-low',
     barWidth: '33%',
     barColor: 'var(--success)',
-    glow: '0 0 30px rgba(16,185,129,0.2)',
   },
   UNKNOWN: {
     label: 'Unknown',
@@ -36,7 +33,6 @@ const RISK_CONFIG = {
     cardClass: 'card-unknown',
     barWidth: '50%',
     barColor: 'var(--unknown)',
-    glow: '0 0 30px rgba(139,92,246,0.2)',
   },
 };
 
@@ -48,12 +44,12 @@ export default function InteractionCard({ result }) {
   const cfg = RISK_CONFIG[result.risk] || RISK_CONFIG.UNKNOWN;
 
   const copyReport = () => {
-    const text = `MedSafe AI — Interaction Report\nDrug: ${result.drug}\nFood: ${result.food}\nRisk: ${cfg.label}\nEffect: ${result.effect}\nAdvice: ${result.advice}`;
+    const text = `Prathy.ai — Interaction Report\nDrug: ${result.drug}\nFood: ${result.food}\nRisk: ${cfg.label}\nEffect: ${result.effect}\nAdvice: ${result.advice}`;
     navigator.clipboard.writeText(text).catch(() => {});
   };
 
   return (
-    <div className={`interaction-card glass ${cfg.cardClass} animate-fade-up`} style={{ boxShadow: cfg.glow }}>
+    <div className={`interaction-card ${cfg.cardClass} animate-fade-up`}>
       {/* Header */}
       <div className="ic-header">
         <div className={`ic-risk-icon risk-icon-${result.risk?.toLowerCase()}`}>

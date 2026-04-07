@@ -10,7 +10,7 @@ const api = axios.create({
 
 // Attach token to every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('medsafe_token');
+  const token = localStorage.getItem('prathy_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -32,15 +32,15 @@ export const interactionService = {
 
   getHistory: async () => {
     await new Promise(r => setTimeout(r, 600));
-    const raw = localStorage.getItem('medsafe_history');
+    const raw = localStorage.getItem('prathy_history');
     return raw ? JSON.parse(raw) : [];
   },
 
   saveToHistory: (result) => {
-    const raw = localStorage.getItem('medsafe_history');
+    const raw = localStorage.getItem('prathy_history');
     const history = raw ? JSON.parse(raw) : [];
     history.unshift({ ...result, id: Date.now() });
-    localStorage.setItem('medsafe_history', JSON.stringify(history.slice(0, 50)));
+    localStorage.setItem('prathy_history', JSON.stringify(history.slice(0, 50)));
   },
 };
 

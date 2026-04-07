@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Shield, Zap, Brain, AlertTriangle, CheckCircle, ChevronRight, Pill, Leaf, Activity, Users, Star } from 'lucide-react';
+import { Shield, Zap, Brain, AlertTriangle, CheckCircle, ChevronRight, Pill, Leaf, Activity, Sparkles } from 'lucide-react';
 import './LandingPage.css';
 
 const STATS = [
@@ -58,7 +58,7 @@ function RiskChip({ risk }) {
 export default function LandingPage() {
   return (
     <div className="landing">
-      {/* Background orbs */}
+      {/* Background ambient */}
       <div className="app-bg">
         <div className="orb orb-1" />
         <div className="orb orb-2" />
@@ -68,14 +68,14 @@ export default function LandingPage() {
       {/* ── HERO ──────────────────────────────── */}
       <section className="hero">
         <div className="hero-badge animate-fade-up">
-          <Zap size={13} /> AI-Powered Drug Safety
+          <Sparkles size={13} /> AI-Powered Drug Safety
         </div>
         <h1 className="hero-title animate-fade-up" style={{ animationDelay: '0.1s' }}>
           Know Before You Eat.<br />
           <span className="gradient-text">Protect Every Dose.</span>
         </h1>
         <p className="hero-subtitle animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          MedSafe AI identifies dangerous drug–food interactions in seconds, so you can make
+          Prathy.ai identifies dangerous drug–food interactions in seconds, so you can make
           informed decisions before a meal puts your medication — or your health — at risk.
         </p>
         <div className="hero-actions animate-fade-up" style={{ animationDelay: '0.3s' }}>
@@ -90,7 +90,7 @@ export default function LandingPage() {
         {/* Stats Row */}
         <div className="hero-stats animate-fade-up" style={{ animationDelay: '0.45s' }}>
           {STATS.map(s => (
-            <div key={s.label} className="stat-card glass">
+            <div key={s.label} className="stat-card">
               <span className="stat-value">{s.value}</span>
               <span className="stat-label">{s.label}</span>
             </div>
@@ -109,7 +109,7 @@ export default function LandingPage() {
         </div>
         <div className="features-grid">
           {FEATURES.map((f, i) => (
-            <div key={f.title} className={`feature-card glass feature-${f.color}`} style={{ animationDelay: `${i * 0.1}s` }}>
+            <div key={f.title} className={`feature-card feature-${f.color}`} style={{ animationDelay: `${i * 0.1}s` }}>
               <div className={`feature-icon feature-icon-${f.color}`}>{f.icon}</div>
               <h3>{f.title}</h3>
               <p>{f.desc}</p>
@@ -124,12 +124,12 @@ export default function LandingPage() {
           <p className="section-label">Real Interactions</p>
           <h2 className="section-title">Dangers Most People Don't Know About</h2>
           <p className="section-subtitle">
-            These real drug-food combinations can cause serious harm. MedSafe AI catches them first.
+            These real drug-food combinations can cause serious harm. Prathy.ai catches them first.
           </p>
         </div>
         <div className="examples-grid">
           {EXAMPLES.map((ex, i) => (
-            <div key={i} className="example-card glass">
+            <div key={i} className="example-card">
               <div className="example-header">
                 <div className="example-items">
                   <span className="example-tag tag-drug"><Pill size={12} />{ex.drug}</span>
@@ -148,12 +148,12 @@ export default function LandingPage() {
       <section id="how-it-works" className="section">
         <div className="section-center">
           <p className="section-label">Simple Process</p>
-          <h2 className="section-title">How MedSafe AI Works</h2>
+          <h2 className="section-title">How Prathy.ai Works</h2>
           <p className="section-subtitle">Four steps to peace of mind with your medications.</p>
         </div>
         <div className="steps-grid">
           {STEPS.map((s, i) => (
-            <div key={s.num} className="step-card glass">
+            <div key={s.num} className="step-card">
               <div className="step-number">{s.num}</div>
               <h3>{s.title}</h3>
               <p>{s.desc}</p>
@@ -165,10 +165,10 @@ export default function LandingPage() {
 
       {/* ── CTA ───────────────────────────────── */}
       <section className="section cta-section">
-        <div className="cta-card glass">
+        <div className="cta-card">
           <div className="cta-icon"><CheckCircle size={32} /></div>
           <h2>Ready to Make Every Meal Safer?</h2>
-          <p>Join thousands of patients who use MedSafe AI to protect their health every day.</p>
+          <p>Join thousands of patients who use Prathy.ai to protect their health every day.</p>
           <div className="cta-actions">
             <Link to="/signup" className="btn-primary btn-lg">
               Create Free Account <ChevronRight size={18} />
@@ -187,14 +187,14 @@ export default function LandingPage() {
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-brand">
-            <div className="navbar-logo-icon" style={{ width: 32, height: 32 }}><Pill size={15} /></div>
-            <span style={{ fontWeight: 700, fontFamily: 'var(--font-display)' }}>MedSafe AI</span>
+            <div className="navbar-logo-icon" style={{ width: 30, height: 30 }}><Sparkles size={14} /></div>
+            <span style={{ fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>Prathy<span style={{ color: 'var(--primary)' }}>.ai</span></span>
           </div>
           <p className="footer-disclaimer">
-            ⚠️ MedSafe AI is for informational purposes only and does not replace professional medical advice.
+            ⚠️ Prathy.ai is for informational purposes only and does not replace professional medical advice.
             Always consult your physician or pharmacist before making medication decisions.
           </p>
-          <p className="footer-copy">© 2026 MedSafe AI. All rights reserved.</p>
+          <p className="footer-copy">© 2026 Prathy.ai. All rights reserved.</p>
         </div>
       </footer>
     </div>

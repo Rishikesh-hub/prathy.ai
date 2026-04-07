@@ -4,35 +4,36 @@
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  background: #FFFFFF;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  animation: orb-drift 15s ease-in-out infinite;
+  filter: blur(120px);
+  animation: orb-drift 20s ease-in-out infinite;
   pointer-events: none;
 }
 .orb-1 {
-  width: 500px; height: 500px;
-  background: rgba(249, 115, 22, 0.15);
-  top: -150px; left: -100px;
+  width: 600px; height: 600px;
+  background: rgba(255, 153, 51, 0.025);
+  top: -200px; right: -150px;
   animation-delay: 0s;
 }
 .orb-2 {
-  width: 400px; height: 400px;
-  background: rgba(245, 158, 11, 0.1);
-  bottom: -100px; right: -100px;
-  animation-duration: 18s;
-  animation-delay: -5s;
+  width: 500px; height: 500px;
+  background: rgba(255, 170, 68, 0.02);
+  bottom: -200px; left: -150px;
+  animation-duration: 24s;
+  animation-delay: -8s;
 }
 .orb-3 {
-  width: 300px; height: 300px;
-  background: rgba(239, 68, 68, 0.08);
-  top: 50%; left: 50%;
+  width: 400px; height: 400px;
+  background: rgba(255, 200, 100, 0.015);
+  top: 40%; left: 40%;
   transform: translate(-50%, -50%);
-  animation-duration: 12s;
-  animation-delay: -3s;
+  animation-duration: 18s;
+  animation-delay: -4s;
 }
 
 /* Page wrapper */
@@ -43,21 +44,24 @@
 .page-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 48px 28px;
 }
 .page-content-narrow {
   max-width: 500px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 48px 28px;
 }
 
 /* ── SECTION HEADERS ───────────────────────── */
 .section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--primary-light);
+  color: var(--primary);
   margin-bottom: 8px;
 }
 .section-title {
@@ -65,10 +69,11 @@
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 16px;
+  color: var(--text-primary);
 }
 .section-subtitle {
   font-size: 1.05rem;
   color: var(--text-secondary);
   max-width: 60ch;
-  line-height: 1.7;
+  line-height: 1.75;
 }

@@ -41,7 +41,7 @@ function SuggestInput({ id, icon, label, value, onChange, suggestions, placehold
         />
       </div>
       {open && filtered.length > 0 && (
-        <ul className="suggest-list glass">
+        <ul className="suggest-list">
           {filtered.slice(0,6).map(s => (
             <li key={s} className="suggest-item" onMouseDown={() => pick(s)}>
               <ChevronRight size={12} /> {s}
@@ -104,7 +104,7 @@ export default function Dashboard() {
           </div>
 
           {/* Input Card */}
-          <div className="predict-card glass animate-fade-up">
+          <div className="predict-card animate-fade-up">
             <form onSubmit={handlePredict} className="predict-form">
               <SuggestInput id="drug-input" icon={<Pill size={16}/>} label="Medication Name"
                 value={drug} onChange={setDrug} suggestions={DRUG_SUGGESTIONS} placeholder="e.g. Warfarin"/>
@@ -135,7 +135,7 @@ export default function Dashboard() {
               <div className="predict-loading">
                 <div className="loading-orb"/>
                 <div>
-                  <p style={{ fontWeight: 600 }}>AI is analyzing the interaction…</p>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>AI is analyzing the interaction…</p>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Cross-referencing pharmacological database</p>
                 </div>
               </div>
@@ -151,18 +151,18 @@ export default function Dashboard() {
 
           {/* Info banner */}
           {!result && !loading && (
-            <div className="info-banner glass animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              <Info size={16} style={{ color:'var(--accent-light)', flexShrink:0 }}/>
-              <p>MedSafe AI uses pharmacological data to detect interactions. Always consult your pharmacist for clinical decisions.</p>
+            <div className="info-banner animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <Info size={16} style={{ color:'var(--primary)', flexShrink:0 }}/>
+              <p>Prathy.ai uses pharmacological data to detect interactions. Always consult your pharmacist for clinical decisions.</p>
             </div>
           )}
         </div>
 
         {/* ── RIGHT PANEL ── */}
         <div className="dashboard-sidebar">
-          <div className="sidebar-card glass">
+          <div className="sidebar-card">
             <div className="sidebar-card-header">
-              <Clock size={15} style={{ color:'var(--primary-light)' }}/>
+              <Clock size={15} style={{ color:'var(--primary)' }}/>
               <span>Quick Examples</span>
             </div>
             <p className="sidebar-desc">Click to auto-fill and test a known interaction:</p>
@@ -181,9 +181,9 @@ export default function Dashboard() {
           </div>
 
           {/* Drug list hint */}
-          <div className="sidebar-card glass">
+          <div className="sidebar-card">
             <div className="sidebar-card-header">
-              <Pill size={15} style={{ color:'var(--primary-light)' }}/>
+              <Pill size={15} style={{ color:'var(--primary)' }}/>
               <span>Supported Drugs</span>
             </div>
             <div className="drug-tags">
