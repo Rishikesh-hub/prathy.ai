@@ -12,6 +12,19 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Root route so opening the server in a browser shows a useful page
+app.get('/', (req, res) => {
+  res.status(200).send(`
+    <h1>Drug-Food API</h1>
+    <p>The backend is running on port ${PORT}.</p>
+    <ul>
+      <li><a href="/api/health">/api/health</a></li>
+      <li><a href="/api/interactions">/api/interactions</a></li>
+      <li>Frontend dev server: <a href="http://localhost:3000">http://localhost:3000</a></li>
+    </ul>
+  `);
+});
+
 // Sample database (in-memory)
 let interactions = [
   {
@@ -205,6 +218,60 @@ app.get('/api/search', (req, res) => {
   }
 });
 
+function buildPredictionResult(drug, food, predictionValue) {
+  let risk, severity, effect, advice;
+
+  if (predictionValue === 2) {
+    risk = 'HIGH';
+    severity = 'High';
+    effect = 'High risk interaction detected! Please avoid this combination.';
+    advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+  } else if (predictionValue === 1) {
+    risk = 'MODERATE';
+    severity = 'Medium';
+    effect = 'Moderate interaction. Proceed with caution.';
+    advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+  } else {
+    risk = 'LOW';
+    severity = 'Low';
+    effect = `No known significant interaction was found for ${drug} and ${food}.`;
+    advice = 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.';
+  }
+
+  return {
+    drug,
+    food,
+    risk,
+    severity,
+    effect,
+    advice,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function getLocalPrediction(drug, food) {
+  const exactMatch = interactions.find(
+    (item) =>
+      item.drug.toLowerCase() === drug.toLowerCase() &&
+      item.food.toLowerCase() === food.toLowerCase()
+  );
+
+  if (!exactMatch) {
+    return buildPredictionResult(drug, food, 0);
+  }
+
+  const severity = exactMatch.severity.toLowerCase();
+  if (severity === 'high' || severity === 'severe') {
+    return buildPredictionResult(drug, food, 2);
+  }
+
+  if (severity === 'medium' || severity === 'moderate') {
+    return buildPredictionResult(drug, food, 1);
+  }
+
+  return buildPredictionResult(drug, food, 0);
+}
+
 // Predict interaction based on drug and food input
 app.post('/api/predict', async (req, res) => {
   try {
@@ -221,42 +288,19 @@ app.post('/api/predict', async (req, res) => {
       const pythonRes = await axios.post('http://127.0.0.1:8000/predict', {
         drug: drug,
         food: food
+      }, {
+        timeout: 3000,
       });
-      
+
       const p = pythonRes.data.prediction;
-      
-      let risk, severity, effect, advice;
-      if (p === 2) {
-        risk = "HIGH"; severity = "High"; 
-        effect = "High risk interaction detected! Please avoid this combination.";
-        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
-      } else if (p === 1) {
-        risk = "MODERATE"; severity = "Medium"; 
-        effect = "Moderate interaction. Proceed with caution.";
-        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
-      } else {
-        risk = "LOW"; severity = "Low"; 
-        effect = `No known significant interaction was found for ${drug} and ${food}.`;
-        advice = 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.';
-      }
 
-      const result = {
-          drug: drug,
-          food: food,
-          risk: risk,
-          severity: severity,
-          effect: effect,
-          advice: advice,
-          timestamp: new Date().toISOString(),
-      };
-
-      return res.status(200).json({ success: true, data: result });
+      return res.status(200).json({ success: true, data: buildPredictionResult(drug, food, p) });
     } catch (pyError) {
-      console.error("Python API Error:", pyError.message);
-      return res.status(502).json({
-        success: false,
-        message: 'Failed to contact Python prediction model.',
-        error: pyError.message
+      console.warn('Python API unavailable, using local fallback:', pyError.message);
+      return res.status(200).json({
+        success: true,
+        data: getLocalPrediction(drug, food),
+        source: 'fallback',
       });
     }
   } catch (error) {
