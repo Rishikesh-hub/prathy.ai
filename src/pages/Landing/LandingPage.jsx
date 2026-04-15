@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Zap, Brain, AlertTriangle, CheckCircle, ChevronRight, Pill, Leaf, Activity, Sparkles } from 'lucide-react';
+import ContactModal from '../../components/Modals/ContactModal';
 import './LandingPage.css';
 
 const STATS = [
@@ -56,6 +58,7 @@ function RiskChip({ risk }) {
 }
 
 export default function LandingPage() {
+  const [isContactOpen, setIsContactOpen] = useState(false);
   return (
     <div className="landing">
       {/* Background ambient */}
@@ -195,8 +198,10 @@ export default function LandingPage() {
             Always consult your physician or pharmacist before making medication decisions.
           </p>
           <p className="footer-copy">© 2026 Prathy.ai. All rights reserved.</p>
+          <button className="btn-primary" style={{ marginTop: '1rem' }} onClick={() => setIsContactOpen(true)}>Contact Us</button>
         </div>
       </footer>
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 }

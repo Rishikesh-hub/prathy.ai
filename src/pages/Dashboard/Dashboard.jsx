@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Search, Pill, Leaf, Zap, AlertTriangle, Info, RefreshCw, ChevronRight, Clock } from 'lucide-react';
+import { Search, Pill, Leaf, Zap, AlertTriangle, Info, RefreshCw, ChevronRight, Clock, MessageSquareWarning } from 'lucide-react';
+import FeedbackModal from '../../components/Modals/FeedbackModal';
 import { useAuth } from '../../context/AuthContext';
 import { interactionService } from '../../services/api';
 import InteractionCard from '../../components/Interaction/InteractionCard';
@@ -55,6 +56,7 @@ function SuggestInput({ id, icon, label, value, onChange, suggestions, placehold
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [drug, setDrug] = useState('');
   const [food, setFood] = useState('');
   const [result, setResult] = useState(null);
@@ -114,7 +116,16 @@ export default function Dashboard() {
               <SuggestInput id="food-input" icon={<Leaf size={16}/>} label="Food / Drink"
                 value={food} onChange={setFood} suggestions={FOOD_SUGGESTIONS} placeholder="e.g. Grapefruit juice"/>
 
-              {error && <div className="predict-error"><AlertTriangle size={14}/> {error}</div>}
+              {error && (
+                <div className="predict-error">
+                  <AlertTriangle size={14}/> {error}
+                  <div style={{ marginTop: '8px' }}>
+                    <button type="button" className="btn-secondary btn-sm mt-2" onClick={() => setIsFeedbackOpen(true)} style={{ display: 'sm-flex', alignItems: 'center', gap: '4px', background: 'transparent' }}>
+                      <MessageSquareWarning size={14} style={{ marginRight: '4px' }}/> Report missing item
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="predict-actions">
                 <button id="predict-btn" type="submit" className="btn-primary predict-btn" disabled={loading}>
@@ -146,6 +157,9 @@ export default function Dashboard() {
           {result && !loading && (
             <div ref={resultRef} className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
               <InteractionCard result={result}/>
+              <button type="button" className="btn-secondary btn-sm mt-4" onClick={() => setIsFeedbackOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <MessageSquareWarning size={14}/> Provide Feedback on this Report
+              </button>
             </div>
           )}
 
@@ -194,6 +208,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} initialDrug={drug} initialFood={food} />
     </div>
   );
 }

@@ -22,11 +22,50 @@ export const interactionService = {
   predict: async (drug, food) => {
     try {
       const response = await api.post('/predict', { drug, food });
-      return response.data.data;
+      const prediction = response.data.prediction;
+      
+      let risk, severity, effect, advice;
+      
+      if (prediction === 2) {
+        risk = 'HIGH';
+        severity = 'High';
+        effect = 'High risk interaction detected! Please avoid this combination.';
+        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+      } else if (prediction === 1) {
+        risk = 'MODERATE';
+        severity = 'Medium';
+        effect = 'Moderate interaction. Proceed with caution.';
+        advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
+      } else {
+        risk = 'LOW';
+        severity = 'Low';
+        effect = `No known significant interaction was found for ${drug} and ${food}.`;
+        advice = 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.';
+      }
+
+      return {
+        drug,
+        food,
+        risk,
+        severity,
+        effect,
+        advice,
+        drug_smiles: response.data.drug_smiles,
+        food_smiles: response.data.food_smiles,
+        timestamp: new Date().toISOString()
+      };
     } catch (error) {
-      console.error('Error predicting interaction:', error);
-      const message = error?.response?.data?.message || error.message || 'Prediction failed';
-      throw new Error(message);
+      console.error('API failed, falling back to local mock data:', error);
+      const dKey = findKey(INTERACTIONS_DB, drug);
+      if (dKey && INTERACTIONS_DB[dKey]) {
+        const fKey = findKey(INTERACTIONS_DB[dKey], food);
+        if (fKey && INTERACTIONS_DB[dKey][fKey]) {
+          return { drug, food, ...INTERACTIONS_DB[dKey][fKey], timestamp: new Date().toISOString() };
+        }
+      }
+      return {
+        drug, food, risk: 'UNKNOWN', severity: 'Unknown', effect: 'Interaction not recorded in local fallback data.', advice: 'Consult a healthcare provider.', timestamp: new Date().toISOString()
+      };
     }
   },
 

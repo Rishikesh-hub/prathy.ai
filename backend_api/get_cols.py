@@ -13,6 +13,6 @@ def print_info(path, label):
         print(e)
     print()
 
-print_info(r'c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\dug_dataset\PubChem_compound_FDA_approved_drugs (1).csv', 'Drug')
-print_info(r'c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\food_dataset\Compound (1).csv', 'Food')
-print_info(r'c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\training_dataset\00_training.csv', 'Training')
+print_info(r'c:\Users\Rishikesh\Desktop\G-1152\DFI\prathy.ai\dug_dataset\PubChem_compound_FDA_approved_drugs (1).csv', 'Drug')
+print_info(r'c:\Users\Rishikesh\Desktop\G-1152\DFI\prathy.ai\food_dataset\Compound (1).csv', 'Food')
+print_info(r'c:\Users\Rishikesh\Desktop\G-1152\DFI\prathy.ai\training_dataset\00_training.csv', 'Training')

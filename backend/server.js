@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
@@ -11,6 +12,22 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {})
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Mongoose Schema
+const interactionSchema = new mongoose.Schema({
+  drug: String,
+  food: String,
+  risk: String,
+  severity: String,
+  effect: String,
+  advice: String,
+});
+const Interaction = mongoose.model('Interaction', interactionSchema);
 
 // Root route so opening the server in a browser shows a useful page
 app.get('/', (req, res) => {
@@ -25,30 +42,13 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Sample database (in-memory)
-let interactions = [
-  {
-    id: 1,
-    drug: 'Aspirin',
-    food: 'Alcohol',
-    severity: 'High',
-    description: 'Can increase risk of stomach bleeding'
-  },
-  {
-    id: 2,
-    drug: 'Metformin',
-    food: 'Vitamin B12 Rich Foods',
-    severity: 'Medium',
-    description: 'May reduce B12 absorption'
-  }
-];
-
 // GET: Fetch all interactions
-app.get('/api/interactions', (req, res) => {
+app.get('/api/interactions', async (req, res) => {
   try {
+    const data = await Interaction.find();
     res.status(200).json({
       success: true,
-      data: interactions,
+      data,
       message: 'Interactions fetched successfully'
     });
   } catch (error) {
@@ -61,10 +61,9 @@ app.get('/api/interactions', (req, res) => {
 });
 
 // GET: Fetch single interaction by ID
-app.get('/api/interactions/:id', (req, res) => {
+app.get('/api/interactions/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const interaction = interactions.find(i => i.id === parseInt(id));
+    const interaction = await Interaction.findById(req.params.id);
 
     if (!interaction) {
       return res.status(404).json({
@@ -87,9 +86,9 @@ app.get('/api/interactions/:id', (req, res) => {
 });
 
 // POST: Add new interaction
-app.post('/api/interactions', (req, res) => {
+app.post('/api/interactions', async (req, res) => {
   try {
-    const { drug, food, severity, description } = req.body;
+    const { drug, food, severity, risk, effect, advice } = req.body;
 
     // Validation
     if (!drug || !food || !severity) {
@@ -99,15 +98,14 @@ app.post('/api/interactions', (req, res) => {
       });
     }
 
-    const newInteraction = {
-      id: interactions.length > 0 ? Math.max(...interactions.map(i => i.id)) + 1 : 1,
+    const newInteraction = await Interaction.create({
       drug,
       food,
       severity,
-      description: description || ''
-    };
-
-    interactions.push(newInteraction);
+      risk,
+      effect,
+      advice
+    });
 
     res.status(201).json({
       success: true,
@@ -124,32 +122,21 @@ app.post('/api/interactions', (req, res) => {
 });
 
 // PUT: Update interaction
-app.put('/api/interactions/:id', (req, res) => {
+app.put('/api/interactions/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { drug, food, severity, description } = req.body;
+    const updated = await Interaction.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-    const interactionIndex = interactions.findIndex(i => i.id === parseInt(id));
-
-    if (interactionIndex === -1) {
+    if (!updated) {
       return res.status(404).json({
         success: false,
         message: 'Interaction not found'
       });
     }
 
-    interactions[interactionIndex] = {
-      ...interactions[interactionIndex],
-      drug: drug || interactions[interactionIndex].drug,
-      food: food || interactions[interactionIndex].food,
-      severity: severity || interactions[interactionIndex].severity,
-      description: description !== undefined ? description : interactions[interactionIndex].description
-    };
-
     res.status(200).json({
       success: true,
       message: 'Interaction updated successfully',
-      data: interactions[interactionIndex]
+      data: updated
     });
   } catch (error) {
     res.status(500).json({
@@ -161,24 +148,21 @@ app.put('/api/interactions/:id', (req, res) => {
 });
 
 // DELETE: Remove interaction
-app.delete('/api/interactions/:id', (req, res) => {
+app.delete('/api/interactions/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const interactionIndex = interactions.findIndex(i => i.id === parseInt(id));
+    const deleted = await Interaction.findByIdAndDelete(req.params.id);
 
-    if (interactionIndex === -1) {
+    if (!deleted) {
       return res.status(404).json({
         success: false,
         message: 'Interaction not found'
       });
     }
 
-    const deletedInteraction = interactions.splice(interactionIndex, 1);
-
     res.status(200).json({
       success: true,
       message: 'Interaction deleted successfully',
-      data: deletedInteraction
+      data: deleted
     });
   } catch (error) {
     res.status(500).json({
@@ -190,19 +174,14 @@ app.delete('/api/interactions/:id', (req, res) => {
 });
 
 // Search interactions
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
   try {
     const { drug, food } = req.query;
+    let query = {};
+    if (drug) query.drug = { $regex: drug, $options: 'i' };
+    if (food) query.food = { $regex: food, $options: 'i' };
 
-    let results = interactions;
-
-    if (drug) {
-      results = results.filter(i => i.drug.toLowerCase().includes(drug.toLowerCase()));
-    }
-
-    if (food) {
-      results = results.filter(i => i.food.toLowerCase().includes(food.toLowerCase()));
-    }
+    const results = await Interaction.find(query);
 
     res.status(200).json({
       success: true,
@@ -218,60 +197,6 @@ app.get('/api/search', (req, res) => {
   }
 });
 
-function buildPredictionResult(drug, food, predictionValue) {
-  let risk, severity, effect, advice;
-
-  if (predictionValue === 2) {
-    risk = 'HIGH';
-    severity = 'High';
-    effect = 'High risk interaction detected! Please avoid this combination.';
-    advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
-  } else if (predictionValue === 1) {
-    risk = 'MODERATE';
-    severity = 'Medium';
-    effect = 'Moderate interaction. Proceed with caution.';
-    advice = `Please consult your healthcare provider before combining ${drug} with ${food}.`;
-  } else {
-    risk = 'LOW';
-    severity = 'Low';
-    effect = `No known significant interaction was found for ${drug} and ${food}.`;
-    advice = 'This combination appears generally safe based on current records, but always consult a healthcare provider for medical advice.';
-  }
-
-  return {
-    drug,
-    food,
-    risk,
-    severity,
-    effect,
-    advice,
-    timestamp: new Date().toISOString(),
-  };
-}
-
-function getLocalPrediction(drug, food) {
-  const exactMatch = interactions.find(
-    (item) =>
-      item.drug.toLowerCase() === drug.toLowerCase() &&
-      item.food.toLowerCase() === food.toLowerCase()
-  );
-
-  if (!exactMatch) {
-    return buildPredictionResult(drug, food, 0);
-  }
-
-  const severity = exactMatch.severity.toLowerCase();
-  if (severity === 'high' || severity === 'severe') {
-    return buildPredictionResult(drug, food, 2);
-  }
-
-  if (severity === 'medium' || severity === 'moderate') {
-    return buildPredictionResult(drug, food, 1);
-  }
-
-  return buildPredictionResult(drug, food, 0);
-}
-
 // Predict interaction based on drug and food input
 app.post('/api/predict', async (req, res) => {
   try {
@@ -284,25 +209,14 @@ app.post('/api/predict', async (req, res) => {
       });
     }
 
-    try {
-      const pythonRes = await axios.post('http://127.0.0.1:8000/predict', {
-        drug: drug,
-        food: food
-      }, {
-        timeout: 3000,
-      });
+    const pythonRes = await axios.post('http://127.0.0.1:8000/predict', {
+      drug: drug,
+      food: food
+    }, {
+      timeout: 3000,
+    });
 
-      const p = pythonRes.data.prediction;
-
-      return res.status(200).json({ success: true, data: buildPredictionResult(drug, food, p) });
-    } catch (pyError) {
-      console.warn('Python API unavailable, using local fallback:', pyError.message);
-      return res.status(200).json({
-        success: true,
-        data: getLocalPrediction(drug, food),
-        source: 'fallback',
-      });
-    }
+    return res.status(200).json(pythonRes.data);
   } catch (error) {
     res.status(500).json({
       success: false,

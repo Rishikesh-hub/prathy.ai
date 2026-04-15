@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import os
 import xgboost as xgb
 import numpy as np
 import pandas as pd
@@ -13,12 +14,13 @@ try:
     model = xgb.XGBClassifier()
     model.load_model("drug_food_model.json")
 except Exception as e:
-    model = None
-    print(f"Error loading model: {e}")
+    raise HTTPException(status_code=500, detail="drug_food_model.json is missing.")
 
 try:
-    drug_df = pd.read_csv(r"c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\dug_dataset\PubChem_compound_FDA_approved_drugs (1).csv")
-    food_df = pd.read_csv(r"c:\Users\thanu\OneDrive\Desktop\assault\drug_food_project\food_dataset\Compound (1).csv")
+    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dug_dataset/PubChem_compound_FDA_approved_drugs (1).csv")
+    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../food_dataset/Compound (1).csv")
+    drug_df = pd.read_csv(drug_dataset_path)
+    food_df = pd.read_csv(food_dataset_path)
 except Exception as e:
     drug_df = None
     food_df = None
