@@ -37,8 +37,12 @@ export function AuthProvider({ children }) {
     localStorage.setItem('prathy_user', JSON.stringify(merged));
   };
 
+  const updateProfile = (newData) => {
+    updateUser(newData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, updateProfile, loading }}>
       {children}
     </AuthContext.Provider>
   );

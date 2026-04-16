@@ -29,6 +29,19 @@ const interactionSchema = new mongoose.Schema({
 });
 const Interaction = mongoose.model('Interaction', interactionSchema);
 
+// User Schema
+const userSchema = new mongoose.Schema({
+  email: { type: String, unique: true },
+  name: String,
+  age: Number,
+  weight: Number,
+  gender: String,
+  conditions: [String],
+  allergies: [String],
+  medications: String
+});
+const User = mongoose.model('User', userSchema);
+
 // Root route so opening the server in a browser shows a useful page
 app.get('/', (req, res) => {
   res.status(200).send(`
@@ -197,10 +210,37 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// Profile endpoints
+app.put('/api/profile', async (req, res) => {
+  try {
+    const { email, ...data } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+    const updated = await User.findOneAndUpdate(
+      { email },
+      { $set: data },
+      { new: true, upsert: true }
+    );
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating profile', error: error.message });
+  }
+});
+
+app.get('/api/profile', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+    const user = await User.findOne({ email });
+    res.status(200).json({ success: true, data: user || {} });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching profile', error: error.message });
+  }
+});
+
 // Predict interaction based on drug and food input
 app.post('/api/predict', async (req, res) => {
   try {
-    const { drug, food } = req.body;
+    const { drug, food, age, weight } = req.body;
 
     if (!drug || !food) {
       return res.status(400).json({
@@ -211,7 +251,9 @@ app.post('/api/predict', async (req, res) => {
 
     const pythonRes = await axios.post('http://127.0.0.1:8000/predict', {
       drug: drug,
-      food: food
+      food: food,
+      age: age,
+      weight: weight
     }, {
       timeout: 3000,
     });

@@ -61,6 +61,11 @@ export default function InteractionCard({ result }) {
             <span className="ic-plus">+</span>
             <span className="ic-food"><Leaf size={12}/>{result.food}</span>
           </div>
+          {result.age && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 500 }}>
+              Patient Age: {result.age}
+            </div>
+          )}
           <div className="ic-severity-row">
             <span className={`badge ${cfg.badgeClass}`}>{cfg.label}</span>
             <span className="ic-timestamp"><Clock size={11}/>{formatTime(result.timestamp)}</span>

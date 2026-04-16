@@ -59,6 +59,8 @@ export default function Dashboard() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [drug, setDrug] = useState('');
   const [food, setFood] = useState('');
+  const [age, setAge] = useState(user?.age || '');
+  const [weight, setWeight] = useState(user?.weight || '');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,11 +69,12 @@ export default function Dashboard() {
   const handlePredict = async (e) => {
     e?.preventDefault();
     if (!drug.trim() || !food.trim()) { setError('Please enter both a drug and a food.'); return; }
+    if (!age || !weight) { setError('Age and Weight are required.'); return; }
     setError('');
     setLoading(true);
     setResult(null);
     try {
-      const res = await interactionService.predict(drug.trim(), food.trim());
+      const res = await interactionService.predict(drug.trim(), food.trim(), parseInt(age, 10), parseFloat(weight));
       interactionService.saveToHistory(res);
       setResult(res);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
@@ -115,6 +118,17 @@ export default function Dashboard() {
               </div>
               <SuggestInput id="food-input" icon={<Leaf size={16}/>} label="Food / Drink"
                 value={food} onChange={setFood} suggestions={FOOD_SUGGESTIONS} placeholder="e.g. Grapefruit juice"/>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Age</label>
+                  <input type="number" className="form-input" value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 45" required />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Weight (kg)</label>
+                  <input type="number" className="form-input" value={weight} onChange={e => setWeight(e.target.value)} placeholder="e.g. 70" required />
+                </div>
+              </div>
 
               {error && (
                 <div className="predict-error">

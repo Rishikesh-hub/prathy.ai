@@ -17,8 +17,8 @@ except Exception as e:
     raise HTTPException(status_code=500, detail="drug_food_model.json is missing.")
 
 try:
-    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dug_dataset/PubChem_compound_FDA_approved_drugs (1).csv")
-    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../food_dataset/Compound (1).csv")
+    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dug_dataset/pubchem_processed.csv")
+    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../food_dataset/Compound_processed.csv")
     drug_df = pd.read_csv(drug_dataset_path)
     food_df = pd.read_csv(food_dataset_path)
 except Exception as e:
@@ -51,6 +51,8 @@ def get_base_features(mol):
 class PredictionRequest(BaseModel):
     drug: str
     food: str
+    age: int
+    weight: float
 
 @app.post("/predict")
 def get_prediction(data: PredictionRequest):
@@ -64,10 +66,8 @@ def get_prediction(data: PredictionRequest):
     drug_row = drug_df[drug_df['Name'].str.lower() == drug_name]
     food_row = food_df[food_df['name'].str.lower() == food_name]
     
-    if drug_row.empty:
-        raise HTTPException(status_code=404, detail=f"Drug '{data.drug}' not found in dataset.")
-    if food_row.empty:
-        raise HTTPException(status_code=404, detail=f"Food '{data.food}' not found in dataset.")
+    if drug_row.empty or food_row.empty:
+        raise HTTPException(status_code=400, detail={"error": "Not found"})
         
     drug_smiles = drug_row.iloc[0]['SMILES']
     food_smiles = food_row.iloc[0]['moldb_smiles']
@@ -105,7 +105,9 @@ def get_prediction(data: PredictionRequest):
             base_feats['VSAEstate7'] + base_feats['VSAEstate7'],
             base_feats['EstateVSA7'],
             base_feats['EstateVSA2'],
-            base_feats['EstateVSA1'] * base_feats['VSAEstate8']
+            base_feats['EstateVSA1'] * base_feats['VSAEstate8'],
+            data.age,
+            data.weight
         ]
     except KeyError as e:
         raise HTTPException(status_code=500, detail=f"Missing descriptor feature: {str(e)}")

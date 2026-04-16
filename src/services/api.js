@@ -19,9 +19,9 @@ api.interceptors.request.use((config) => {
 // BACKEND-CONNECTED INTERACTION SERVICE
 // ──────────────────────────────────────────────
 export const interactionService = {
-  predict: async (drug, food) => {
+  predict: async (drug, food, age, weight) => {
     try {
-      const response = await api.post('/predict', { drug, food });
+      const response = await api.post('/predict', { drug, food, age, weight });
       const prediction = response.data.prediction;
       
       let risk, severity, effect, advice;
@@ -52,6 +52,8 @@ export const interactionService = {
         advice,
         drug_smiles: response.data.drug_smiles,
         food_smiles: response.data.food_smiles,
+        age,
+        weight,
         timestamp: new Date().toISOString()
       };
     } catch (error) {

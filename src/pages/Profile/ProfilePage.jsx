@@ -7,7 +7,7 @@ const COMMON_CONDITIONS = ['Diabetes', 'Hypertension', 'Heart Disease', 'Thyroid
 const COMMON_ALLERGIES = ['Penicillin', 'Sulfa drugs', 'NSAIDs', 'Aspirin', 'Codeine', 'Latex'];
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [form, setForm] = useState({
     age: user?.age || '',
     gender: user?.gender || '',
@@ -26,11 +26,23 @@ export default function ProfilePage() {
       [field]: p[field].includes(val) ? p[field].filter(v => v !== val) : [...p[field], val],
     }));
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    updateUser(form);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      const payload = { ...form, email: user?.email };
+      const res = await fetch('http://localhost:5000/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        updateProfile(form);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving profile', err);
+    }
   };
 
   return (
