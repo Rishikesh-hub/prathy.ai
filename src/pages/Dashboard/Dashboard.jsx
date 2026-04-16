@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Pill, Leaf, Zap, AlertTriangle, Info, RefreshCw, ChevronRight, Clock, MessageSquareWarning } from 'lucide-react';
 import FeedbackModal from '../../components/Modals/FeedbackModal';
 import { useAuth } from '../../context/AuthContext';
@@ -64,7 +64,24 @@ export default function Dashboard() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [drugOptions, setDrugOptions] = useState(DRUG_SUGGESTIONS);
+  const [foodOptions, setFoodOptions] = useState(FOOD_SUGGESTIONS);
   const resultRef = useRef(null);
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:5000/api/options')
+      .then(res => res.json())
+      .then(data => {
+        if (data.drugs) setDrugOptions(data.drugs);
+        if (data.foods) setFoodOptions(data.foods);
+      })
+      .catch(err => console.error('Error fetching options', err));
+  }, []);
+
+  useEffect(() => {
+    if (user?.age) setAge(user.age);
+    if (user?.weight) setWeight(user.weight);
+  }, [user]);
 
   const handlePredict = async (e) => {
     e?.preventDefault();
@@ -112,12 +129,12 @@ export default function Dashboard() {
           <div className="predict-card animate-fade-up">
             <form onSubmit={handlePredict} className="predict-form">
               <SuggestInput id="drug-input" icon={<Pill size={16}/>} label="Medication Name"
-                value={drug} onChange={setDrug} suggestions={DRUG_SUGGESTIONS} placeholder="e.g. Warfarin"/>
+                value={drug} onChange={setDrug} suggestions={drugOptions} placeholder="e.g. Warfarin"/>
               <div className="predict-vs">
                 <div className="vs-line"/><span className="vs-text">+</span><div className="vs-line"/>
               </div>
               <SuggestInput id="food-input" icon={<Leaf size={16}/>} label="Food / Drink"
-                value={food} onChange={setFood} suggestions={FOOD_SUGGESTIONS} placeholder="e.g. Grapefruit juice"/>
+                value={food} onChange={setFood} suggestions={foodOptions} placeholder="e.g. Grapefruit juice"/>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <div className="form-group" style={{ flex: 1 }}>

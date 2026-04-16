@@ -12,9 +12,27 @@ export function AuthProvider({ children }) {
     const savedUser = localStorage.getItem('prathy_user');
     if (savedToken && savedUser) {
       setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      
+      if (parsedUser?.email) {
+        fetch(`http://localhost:5000/api/profile?email=${parsedUser.email}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.data) {
+              const freshData = { ...parsedUser, ...data.data };
+              setUser(freshData);
+              localStorage.setItem('prathy_user', JSON.stringify(freshData));
+            }
+          })
+          .catch(err => console.error('Failed to sync profile', err))
+          .finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = (userData, authToken) => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Heart, Save, CheckCircle, Pill } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './ProfilePage.css';
@@ -17,6 +17,20 @@ export default function ProfilePage() {
     medications: user?.medications || '',
   });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        age: user.age || prev.age,
+        gender: user.gender || prev.gender,
+        weight: user.weight || prev.weight,
+        conditions: user.conditions?.length ? user.conditions : prev.conditions,
+        allergies: user.allergies?.length ? user.allergies : prev.allergies,
+        medications: user.medications || prev.medications,
+      }));
+    }
+  }, [user]);
 
   const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -38,6 +52,7 @@ export default function ProfilePage() {
       if (res.ok) {
         updateProfile(form);
         setSaved(true);
+        alert("Profile updated successfully!");
         setTimeout(() => setSaved(false), 3000);
       }
     } catch (err) {

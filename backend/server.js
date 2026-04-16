@@ -268,6 +268,20 @@ app.post('/api/predict', async (req, res) => {
   }
 });
 
+// Proxy for options
+app.get('/api/options', async (req, res) => {
+  try {
+    const pythonRes = await axios.get('http://127.0.0.1:8000/options', { timeout: 3000 });
+    res.status(200).json(pythonRes.data);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching options',
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'Backend server is running!' });

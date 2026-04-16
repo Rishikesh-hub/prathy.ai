@@ -17,8 +17,8 @@ except Exception as e:
     raise HTTPException(status_code=500, detail="drug_food_model.json is missing.")
 
 try:
-    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dug_dataset/pubchem_processed.csv")
-    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../food_dataset/Compound_processed.csv")
+    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "combined_drug_dataset.csv")
+    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "food_compound_dataset.csv")
     drug_df = pd.read_csv(drug_dataset_path)
     food_df = pd.read_csv(food_dataset_path)
 except Exception as e:
@@ -54,6 +54,19 @@ class PredictionRequest(BaseModel):
     age: int
     weight: float
 
+@app.get("/options")
+def get_options():
+    if drug_df is None or food_df is None:
+        raise HTTPException(status_code=500, detail="Server not properly initialized (datasets missing).")
+        
+    drugs = drug_df['name'].dropna().astype(str).unique().tolist()
+    foods = food_df['food'].dropna().astype(str).unique().tolist()
+    
+    return {
+        "drugs": drugs,
+        "foods": foods
+    }
+
 @app.post("/predict")
 def get_prediction(data: PredictionRequest):
     if model is None or drug_df is None or food_df is None:
@@ -63,8 +76,8 @@ def get_prediction(data: PredictionRequest):
     food_name = data.food.lower()
     
     # Retrieve smiles
-    drug_row = drug_df[drug_df['Name'].str.lower() == drug_name]
-    food_row = food_df[food_df['name'].str.lower() == food_name]
+    drug_row = drug_df[drug_df['name'].str.lower() == drug_name]
+    food_row = food_df[food_df['food'].str.lower() == food_name]
     
     if drug_row.empty or food_row.empty:
         raise HTTPException(status_code=400, detail={"error": "Not found"})
