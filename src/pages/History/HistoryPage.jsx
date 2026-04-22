@@ -8,7 +8,7 @@ const RISK_ICONS = {
   HIGH: <AlertTriangle size={14} style={{ color:'var(--danger-light)' }}/>,
   MODERATE: <AlertCircle size={14} style={{ color:'var(--warning-light)' }}/>,
   LOW: <CheckCircle size={14} style={{ color:'var(--success-light)' }}/>,
-  UNKNOWN: <HelpCircle size={14} style={{ color:'#a78bfa' }}/>,
+  UNKNOWN: <HelpCircle size={14} style={{ color:'#f59393ff' }}/>,
 };
 const RISK_BADGE = { HIGH:'badge-high', MODERATE:'badge-moderate', LOW:'badge-low', UNKNOWN:'badge-unknown' };
 
