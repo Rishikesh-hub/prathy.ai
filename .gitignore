@@ -7,10 +7,28 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+node_modules/
+backend/node_modules/
 dist
 dist-ssr
 *.local
+
+# Large dataset zips (already in backend_api folder)
+*.zip
+training_dataset.zip
+testing_dataset.zip
+validation_dataset.zip
+dug_dataset.zip
+food_dataset.zip
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env
+backend/.env
 
 # Editor directories and files
 .vscode/*

@@ -7,13 +7,17 @@ import InteractionCard from '../../components/Interaction/InteractionCard';
 import './Dashboard.css';
 
 const DRUG_SUGGESTIONS = ['Warfarin', 'Atorvastatin', 'Metformin', 'Lisinopril', 'Aspirin', 'Levothyroxine', 'Simvastatin', 'Amlodipine', 'Omeprazole', 'Sertraline'];
-const FOOD_SUGGESTIONS = ['Grapefruit', 'Alcohol', 'Spinach', 'Bananas', 'Coffee', 'Dairy', 'Soy', 'Walnuts', 'Cranberry', 'Ginger', 'Salt substitute', 'Refined sugar'];
+const FOOD_SUGGESTIONS = [
+  'grapefruit', 'coffee', 'milk', 'spinach', 'banana',
+  'chocolate', 'garlic', 'ginger', 'apple', 'tea',
+  'walnut', 'soybean'
+];
 
 const RECENT_EXAMPLES = [
-  { drug: 'Warfarin', food: 'Grapefruit' },
-  { drug: 'Metformin', food: 'Alcohol' },
-  { drug: 'Levothyroxine', food: 'Coffee' },
-  { drug: 'Lisinopril', food: 'Bananas' },
+  { drug: 'Warfarin',      food: 'grapefruit' },
+  { drug: 'Metformin',     food: 'coffee' },
+  { drug: 'Levothyroxine', food: 'milk' },
+  { drug: 'Lisinopril',    food: 'banana' },
 ];
 
 // Removed SuggestInput component as we are using native datalist

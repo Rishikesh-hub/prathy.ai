@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import json
@@ -10,52 +11,73 @@ from rdkit.Chem import rdMolDescriptors
 
 app = FastAPI()
 
-# 1. Load the model and datasets
+# Allow requests from React dev server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ── Load model ──────────────────────────────────────────────
 try:
     model = xgb.XGBClassifier()
-    model.load_model("drug_food_model.json")
+    model.load_model(os.path.join(BASE_DIR, "drug_food_model.json"))
 except Exception as e:
-    raise HTTPException(status_code=500, detail="drug_food_model.json is missing.")
+    print(f"ERROR loading model: {e}")
+    model = None
 
+# ── Load datasets ───────────────────────────────────────────
 try:
-    drug_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "combined_drug_dataset.csv")
-    food_dataset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "food_compound_dataset.csv")
-    drug_df = pd.read_csv(drug_dataset_path)
-    food_df = pd.read_csv(food_dataset_path)
+    drug_df = pd.read_csv(os.path.join(BASE_DIR, "combined_drug_dataset.csv"))
+    food_df = pd.read_csv(os.path.join(BASE_DIR, "food_compound_dataset.csv"))
+    # food_compound_dataset.csv is now the clean 71-row file (one compound per food)
 except Exception as e:
     drug_df = None
     food_df = None
-    print(f"Error loading datasets: {e}")
+    print(f"ERROR loading datasets: {e}")
 
+# ── Load disease warnings ────────────────────────────────────
 try:
-    warnings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disease_warnings.json")
-    with open(warnings_path, 'r') as f:
-        disease_warnings = json.load(f)
+    with open(os.path.join(BASE_DIR, "disease_warnings.json"), "r") as f:
+        disease_warning_map = json.load(f)
 except Exception as e:
-    disease_warnings = {}
-    print(f"Error loading disease warnings: {e}")
+    disease_warning_map = {}
+    print(f"ERROR loading disease_warnings.json: {e}")
+
 
 def get_base_features(mol):
+    """Extract the 18 chemical descriptors used by the model."""
     if mol is None:
         return None
-    
-    tpsa = rdMolDescriptors.CalcTPSA(mol)
-    smr_vsa = rdMolDescriptors.SMR_VSA_(mol)  # Length 10
-    vsa_estate = rdMolDescriptors.CalcVSA_EState_(mol) # Length 10
-    estate_vsa = rdMolDescriptors.CalcEState_VSA_(mol) # Length 11
-    peoe_vsa = rdMolDescriptors.PEOE_VSA_(mol) # Length 14
-    slogp_vsa = rdMolDescriptors.SlogP_VSA_(mol) # Length 12
-    labute_asa = rdMolDescriptors.CalcLabuteASA(mol)
-    
     feats = {}
-    feats['MTPSA'] = tpsa
-    for i, v in enumerate(smr_vsa): feats[f'MRVSA{i}'] = v
-    for i, v in enumerate(vsa_estate): feats[f'VSAEstate{i}'] = v
-    for i, v in enumerate(estate_vsa): feats[f'EstateVSA{i}'] = v
-    for i, v in enumerate(peoe_vsa): feats[f'PEOEVSA{i}'] = v
-    for i, v in enumerate(slogp_vsa): feats[f'slogPVSA{i}'] = v
-    feats['LabuteASA'] = labute_asa
+    feats['MTPSA'] = rdMolDescriptors.CalcTPSA(mol)
+    feats['LabuteASA'] = rdMolDescriptors.CalcLabuteASA(mol)
+
+    smr_vsa = rdMolDescriptors.SMR_VSA_(mol)          # length 10 → indices 0–9
+    for i, v in enumerate(smr_vsa):
+        feats[f'MRVSA{i}'] = v
+
+    vsa_estate = rdMolDescriptors.CalcVSA_EState_(mol) # length 10 → indices 0–9
+    for i, v in enumerate(vsa_estate):
+        feats[f'VSAEstate{i}'] = v
+
+    estate_vsa = rdMolDescriptors.CalcEState_VSA_(mol) # length 11 → indices 0–10
+    for i, v in enumerate(estate_vsa):
+        feats[f'EstateVSA{i}'] = v
+
+    peoe_vsa = rdMolDescriptors.PEOE_VSA_(mol)         # length 14 → indices 0–13
+    for i, v in enumerate(peoe_vsa):
+        feats[f'PEOEVSA{i}'] = v
+
+    slogp_vsa = rdMolDescriptors.SlogP_VSA_(mol)       # length 12 → indices 0–11
+    for i, v in enumerate(slogp_vsa):
+        feats[f'slogPVSA{i}'] = v
+
     return feats
+
 
 class PredictionRequest(BaseModel):
     drug: str
@@ -64,52 +86,70 @@ class PredictionRequest(BaseModel):
     weight: float
     diseases: list[str] = []
 
+
+@app.get("/health")
+def health():
+    return {"status": "FastAPI is running"}
+
+
 @app.get("/drugs")
 def get_drugs():
     if drug_df is None:
-        raise HTTPException(status_code=500, detail="Drugs dataset missing.")
-    drugs = drug_df['name'].dropna().astype(str).unique().tolist()
-    return drugs
+        raise HTTPException(status_code=500, detail="Drug dataset not loaded.")
+    return drug_df['name'].dropna().astype(str).unique().tolist()
+
 
 @app.get("/foods")
 def get_foods():
     if food_df is None:
-        raise HTTPException(status_code=500, detail="Foods dataset missing.")
-    foods = food_df['food'].dropna().astype(str).unique().tolist()
-    return foods
+        raise HTTPException(status_code=500, detail="Food dataset not loaded.")
+    # 'food' column has the real food names (grapefruit, coffee, etc.)
+    return food_df['food'].dropna().astype(str).unique().tolist()
+
 
 @app.post("/predict")
 def get_prediction(data: PredictionRequest):
     if model is None or drug_df is None or food_df is None:
-        raise HTTPException(status_code=500, detail="Server not properly initialized (model or datasets missing).")
-        
-    drug_name = data.drug.lower()
-    food_name = data.food.lower()
-    
-    # Retrieve smiles
-    drug_row = drug_df[drug_df['name'].str.lower() == drug_name]
-    food_row = food_df[food_df['food'].str.lower() == food_name]
-    
-    if drug_row.empty or food_row.empty:
-        raise HTTPException(status_code=400, detail={"error": "Not found"})
-        
-    drug_smiles = drug_row.iloc[0]['SMILES']
-    food_smiles = food_row.iloc[0]['moldb_smiles']
-    
-    if pd.isna(drug_smiles) or pd.isna(food_smiles):
-        raise HTTPException(status_code=400, detail="SMILES data is missing for the given drug or food.")
+        raise HTTPException(status_code=500, detail="Server not properly initialized.")
 
-    # Combine SMILES for descriptor calculation
+    drug_name = data.drug.strip().lower()
+    food_name = data.food.strip().lower()
+
+    # ── Lookup drug by name (case-insensitive) ───────────────
+    drug_row = drug_df[drug_df['name'].str.lower() == drug_name]
+    if drug_row.empty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Drug '{data.drug}' not found in database. Check spelling or use the autocomplete list."
+        )
+
+    # ── Lookup food by food column (case-insensitive) ────────
+    food_row = food_df[food_df['food'].str.lower() == food_name]
+    if food_row.empty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Food '{data.food}' not found. Supported foods: grapefruit, coffee, banana, milk, etc."
+        )
+
+    # FIX: column is 'smiles' (lowercase) in both datasets
+    drug_smiles = drug_row.iloc[0]['smiles']
+    food_smiles = food_row.iloc[0]['smiles']
+
+    if pd.isna(drug_smiles) or pd.isna(food_smiles):
+        raise HTTPException(status_code=400, detail="SMILES data missing for this drug/food pair.")
+
+    # ── Combine SMILES and compute descriptors ───────────────
     combined_smiles = f"{drug_smiles}.{food_smiles}"
     mol = Chem.MolFromSmiles(combined_smiles)
     if mol is None:
-        raise HTTPException(status_code=400, detail="Invalid SMILES combination.")
-        
+        raise HTTPException(status_code=400, detail="Invalid SMILES combination — could not parse molecule.")
+
     base_feats = get_base_features(mol)
     if base_feats is None:
-        raise HTTPException(status_code=400, detail="Failed to calculate features.")
+        raise HTTPException(status_code=400, detail="Failed to calculate molecular features.")
 
-    # Construct the exact 18 features expected by the model
+    # ── Build the 20-feature vector (18 chemical + age + weight) ─
+    # FIX: VSAEstate index range is 0–9 (not 0–10). VSAEstate10 does not exist.
     try:
         features = [
             base_feats['MTPSA'] + base_feats['MTPSA'],
@@ -117,7 +157,7 @@ def get_prediction(data: PredictionRequest):
             base_feats['MRVSA8'],
             base_feats['MRVSA0'],
             base_feats['MRVSA2'],
-            base_feats['VSAEstate10'] + base_feats['VSAEstate10'],
+            base_feats['VSAEstate9'] + base_feats['VSAEstate9'],   # was VSAEstate10 (FIXED)
             base_feats['EstateVSA0'] * base_feats['LabuteASA'],
             base_feats['PEOEVSA12'],
             base_feats['PEOEVSA10'],
@@ -130,29 +170,26 @@ def get_prediction(data: PredictionRequest):
             base_feats['EstateVSA7'],
             base_feats['EstateVSA2'],
             base_feats['EstateVSA1'] * base_feats['VSAEstate8'],
-            data.age,
-            data.weight
+            float(data.age),
+            float(data.weight),
         ]
     except KeyError as e:
-        raise HTTPException(status_code=500, detail=f"Missing descriptor feature: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Missing descriptor key: {str(e)}")
 
-    # Convert to 2D numpy array
+    # ── Run prediction ───────────────────────────────────────
     input_array = np.array([features])
-    
-    # Run the prediction
-    prediction = model.predict(input_array)
-    
-    # Process disease warnings
+    prediction = int(model.predict(input_array)[0])
+
+    # ── Disease warnings (rule-based, local only) ────────────
     matched_warnings = []
-    if data.diseases:
-        for disease in data.diseases:
-            d_lower = disease.lower()
-            if d_lower in disease_warnings:
-                matched_warnings.append(f"{disease}: {disease_warnings[d_lower]}")
-    
+    for disease in data.diseases:
+        key = disease.strip().lower()
+        if key in disease_warning_map:
+            matched_warnings.append(f"{disease}: {disease_warning_map[key]}")
+
     return {
-        "prediction": int(prediction[0]),
+        "prediction": prediction,
         "drug_smiles": drug_smiles,
         "food_smiles": food_smiles,
-        "disease_warnings": matched_warnings
+        "disease_warnings": matched_warnings,
     }
