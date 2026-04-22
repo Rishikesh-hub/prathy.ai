@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { History, Trash2, Search, AlertTriangle, CheckCircle, AlertCircle, HelpCircle, Filter } from 'lucide-react';
-import { interactionService } from '../../services/api';
+import { getHistory } from '../../services/api';
 import InteractionCard from '../../components/Interaction/InteractionCard';
 import './HistoryPage.css';
 
@@ -20,7 +20,7 @@ export default function HistoryPage() {
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    interactionService.getHistory().then(h => { setHistory(h); setLoading(false); });
+    getHistory().then(h => { setHistory(h); setLoading(false); });
   }, []);
 
   const clearHistory = () => {

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, Pill, Leaf, Zap, AlertTriangle, Info, RefreshCw, ChevronRight, Clock, MessageSquareWarning } from 'lucide-react';
 import FeedbackModal from '../../components/Modals/FeedbackModal';
 import { useAuth } from '../../context/AuthContext';
-import { interactionService } from '../../services/api';
+import { predictInteraction, getDrugs, getFoods, saveToHistory } from '../../services/api';
 import InteractionCard from '../../components/Interaction/InteractionCard';
 import './Dashboard.css';
 
@@ -16,43 +16,7 @@ const RECENT_EXAMPLES = [
   { drug: 'Lisinopril', food: 'Bananas' },
 ];
 
-function SuggestInput({ id, icon, label, value, onChange, suggestions, placeholder }) {
-  const [open, setOpen] = useState(false);
-  const [filtered, setFiltered] = useState([]);
-
-  const handleChange = (e) => {
-    const v = e.target.value;
-    onChange(v);
-    setFiltered(suggestions.filter(s => s.toLowerCase().includes(v.toLowerCase()) && v));
-    setOpen(true);
-  };
-
-  const pick = (s) => { onChange(s); setOpen(false); };
-
-  return (
-    <div className="suggest-wrap">
-      <label className="form-label" htmlFor={id}>{label}</label>
-      <div className="input-icon-wrap">
-        <span className="input-icon">{icon}</span>
-        <input id={id} className="form-input input-with-icon" value={value}
-          onChange={handleChange} placeholder={placeholder}
-          onFocus={() => { setFiltered(suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase()))); setOpen(true); }}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          autoComplete="off"
-        />
-      </div>
-      {open && filtered.length > 0 && (
-        <ul className="suggest-list">
-          {filtered.slice(0,6).map(s => (
-            <li key={s} className="suggest-item" onMouseDown={() => pick(s)}>
-              <ChevronRight size={12} /> {s}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
+// Removed SuggestInput component as we are using native datalist
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -61,6 +25,7 @@ export default function Dashboard() {
   const [food, setFood] = useState('');
   const [age, setAge] = useState(user?.age || '');
   const [weight, setWeight] = useState(user?.weight || '');
+  const [diseases, setDiseases] = useState(user?.conditions?.join(', ') || '');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -69,18 +34,19 @@ export default function Dashboard() {
   const resultRef = useRef(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/api/options')
-      .then(res => res.json())
-      .then(data => {
-        if (data.drugs) setDrugOptions(data.drugs);
-        if (data.foods) setFoodOptions(data.foods);
-      })
-      .catch(err => console.error('Error fetching options', err));
+    getDrugs()
+      .then(data => setDrugOptions(data))
+      .catch(err => console.error('Error fetching drugs', err));
+      
+    getFoods()
+      .then(data => setFoodOptions(data))
+      .catch(err => console.error('Error fetching foods', err));
   }, []);
 
   useEffect(() => {
     if (user?.age) setAge(user.age);
     if (user?.weight) setWeight(user.weight);
+    if (user?.conditions) setDiseases(user.conditions.join(', '));
   }, [user]);
 
   const handlePredict = async (e) => {
@@ -91,8 +57,9 @@ export default function Dashboard() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await interactionService.predict(drug.trim(), food.trim(), parseInt(age, 10), parseFloat(weight));
-      interactionService.saveToHistory(res);
+      const diseasesList = diseases.split(',').map(d => d.trim()).filter(d => d);
+      const res = await predictInteraction(drug.trim(), food.trim(), parseInt(age, 10), parseFloat(weight), diseasesList);
+      saveToHistory(res);
       setResult(res);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
     } catch (err) {
@@ -128,13 +95,33 @@ export default function Dashboard() {
           {/* Input Card */}
           <div className="predict-card animate-fade-up">
             <form onSubmit={handlePredict} className="predict-form">
-              <SuggestInput id="drug-input" icon={<Pill size={16}/>} label="Medication Name"
-                value={drug} onChange={setDrug} suggestions={drugOptions} placeholder="e.g. Warfarin"/>
+              <div className="form-group">
+                <label className="form-label" htmlFor="drug-input">Medication Name</label>
+                <div className="input-icon-wrap">
+                  <span className="input-icon"><Pill size={16}/></span>
+                  <input list="drug-datalist" id="drug-input" className="form-input input-with-icon" value={drug}
+                    onChange={(e) => setDrug(e.target.value)} placeholder="e.g. Warfarin" autoComplete="off" />
+                  <datalist id="drug-datalist">
+                    {drugOptions.map((opt, idx) => <option key={idx} value={opt} />)}
+                  </datalist>
+                </div>
+              </div>
+
               <div className="predict-vs">
                 <div className="vs-line"/><span className="vs-text">+</span><div className="vs-line"/>
               </div>
-              <SuggestInput id="food-input" icon={<Leaf size={16}/>} label="Food / Drink"
-                value={food} onChange={setFood} suggestions={foodOptions} placeholder="e.g. Grapefruit juice"/>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="food-input">Food / Drink</label>
+                <div className="input-icon-wrap">
+                  <span className="input-icon"><Leaf size={16}/></span>
+                  <input list="food-datalist" id="food-input" className="form-input input-with-icon" value={food}
+                    onChange={(e) => setFood(e.target.value)} placeholder="e.g. Grapefruit" autoComplete="off" />
+                  <datalist id="food-datalist">
+                    {foodOptions.map((opt, idx) => <option key={idx} value={opt} />)}
+                  </datalist>
+                </div>
+              </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                 <div className="form-group" style={{ flex: 1 }}>
@@ -145,6 +132,11 @@ export default function Dashboard() {
                   <label className="form-label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Weight (kg)</label>
                   <input type="number" className="form-input" value={weight} onChange={e => setWeight(e.target.value)} placeholder="e.g. 70" required />
                 </div>
+              </div>
+              
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.85rem', fontWeight: 600 }}>Diseases / Conditions (comma separated)</label>
+                <input type="text" className="form-input" value={diseases} onChange={e => setDiseases(e.target.value)} placeholder="e.g. diabetes, hypertension" />
               </div>
 
               {error && (

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
+import json
 import xgboost as xgb
 import numpy as np
 import pandas as pd
@@ -25,6 +26,14 @@ except Exception as e:
     drug_df = None
     food_df = None
     print(f"Error loading datasets: {e}")
+
+try:
+    warnings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "disease_warnings.json")
+    with open(warnings_path, 'r') as f:
+        disease_warnings = json.load(f)
+except Exception as e:
+    disease_warnings = {}
+    print(f"Error loading disease warnings: {e}")
 
 def get_base_features(mol):
     if mol is None:
@@ -53,19 +62,21 @@ class PredictionRequest(BaseModel):
     food: str
     age: int
     weight: float
+    diseases: list[str] = []
 
-@app.get("/options")
-def get_options():
-    if drug_df is None or food_df is None:
-        raise HTTPException(status_code=500, detail="Server not properly initialized (datasets missing).")
-        
+@app.get("/drugs")
+def get_drugs():
+    if drug_df is None:
+        raise HTTPException(status_code=500, detail="Drugs dataset missing.")
     drugs = drug_df['name'].dropna().astype(str).unique().tolist()
+    return drugs
+
+@app.get("/foods")
+def get_foods():
+    if food_df is None:
+        raise HTTPException(status_code=500, detail="Foods dataset missing.")
     foods = food_df['food'].dropna().astype(str).unique().tolist()
-    
-    return {
-        "drugs": drugs,
-        "foods": foods
-    }
+    return foods
 
 @app.post("/predict")
 def get_prediction(data: PredictionRequest):
@@ -131,8 +142,17 @@ def get_prediction(data: PredictionRequest):
     # Run the prediction
     prediction = model.predict(input_array)
     
+    # Process disease warnings
+    matched_warnings = []
+    if data.diseases:
+        for disease in data.diseases:
+            d_lower = disease.lower()
+            if d_lower in disease_warnings:
+                matched_warnings.append(f"{disease}: {disease_warnings[d_lower]}")
+    
     return {
         "prediction": int(prediction[0]),
         "drug_smiles": drug_smiles,
-        "food_smiles": food_smiles
+        "food_smiles": food_smiles,
+        "disease_warnings": matched_warnings
     }

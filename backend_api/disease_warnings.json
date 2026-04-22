@@ -1,0 +1,10 @@
+{
+  "diabetes": "Watch for significant fluctuations in blood sugar levels. Avoid high-sugar foods.",
+  "hypertension": "Monitor blood pressure regularly. Be cautious of high sodium intake.",
+  "heart disease": "Consult your cardiologist before consuming this combination.",
+  "kidney disease": "Ensure hydration. Limit potassium and phosphorus intake if applicable.",
+  "liver disease": "Avoid alcohol and hepatotoxic substances entirely.",
+  "asthma": "Be aware of potential respiratory distress or allergic reactions.",
+  "peptic ulcer": "Avoid NSAIDs, alcohol, and spicy foods which may irritate the stomach lining.",
+  "thyroid disorder": "Maintain consistent meal timing with levothyroxine and monitor TSH levels."
+}
